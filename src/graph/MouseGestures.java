@@ -4,6 +4,10 @@ import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.input.MouseEvent;
 
+/**
+ * This is used to make the cells draggable.
+ * @author Cameron Sabuda
+ */
 public class MouseGestures {
 
     private final DragContext dragContext = new DragContext();
@@ -11,6 +15,7 @@ public class MouseGestures {
     public MouseGestures() {
     }
 
+    // adds the event handlers to the given node.
     public void makeDraggable( final Node node) {
 
         node.setOnMousePressed(onMousePressedEventHandler);

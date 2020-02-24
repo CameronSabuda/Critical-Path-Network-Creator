@@ -23,22 +23,26 @@ import java.util.ArrayList;
 
 public class App extends Application {
 
-    CriticalPathGraph criticalpathgraph = new CriticalPathGraph();
-    Graph graph = new Graph();
+    CriticalPathGraph criticalpathgraph;
+    Graph graph;
 
     @Override
     public void start(final Stage primaryStage) {
 
+        // Set the title of the window
         primaryStage.setTitle("Critical Path Network Creator");
 
+        // Create a borderPane to contain all of the user interface elements
         BorderPane userInterface = new BorderPane();
         userInterface.setTop(createToolBar(primaryStage));
 
+        // Initialise the data graph and the view graph
         criticalpathgraph = new CriticalPathGraph();
         graph = new Graph();
 
         userInterface.setCenter(graph.getCellLayer());
 
+        // Create the window
         Scene scene = new Scene(userInterface, 1280, 720);
         //buttonGrid.setGridLinesVisible(true);
         primaryStage.setScene(scene);
@@ -46,13 +50,15 @@ public class App extends Application {
         primaryStage.setResizable(false);
     }
 
-    private ToolBar createToolBar(Stage primaryStage){
+    // Create the toolbar
+    private ToolBar createToolBar(Stage primaryStage) {
 
-        class ToolbarButton extends Button{
-            private ToolbarButton(String text){
+        // An internal class to be used to make each button in the toolbar.
+        class ToolbarButton extends Button {
+            private ToolbarButton(String text) {
                 super(text);
                 //set image
-                Image image = new Image(this.getClass().getResourceAsStream("button-icons/"+text+".png"));
+                Image image = new Image(this.getClass().getResourceAsStream("button-icons/" + text + ".png"));
                 this.setGraphic(new ImageView(image));
             }
         }
@@ -60,16 +66,20 @@ public class App extends Application {
         //NEW BUTTON
         ToolbarButton newBtn = new ToolbarButton("New");
         newBtn.setOnAction(e -> {
+            // basically just restart the app
             this.start(primaryStage);
         });
 
         //OPEN BUTTON
         ToolbarButton openBtn = new ToolbarButton("Open");
         openBtn.setOnAction(e -> {
+            // Open a window that allows the user to select a file from their system to open.
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Open File");
+            // make only .cpg files visible
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Critical Path Graph Files", "*.cpg"));
             File file = fileChooser.showOpenDialog(primaryStage);
+            // try to open the file
             if (file != null) {
                 try {
                     String fileContents = "";
@@ -97,12 +107,15 @@ public class App extends Application {
         //SAVE BUTTON
         ToolbarButton saveBtn = new ToolbarButton("Save");
         saveBtn.setOnAction(e -> {
+            // Convert the file into a string that can be put in a file to be saved.
             String fileContents = createFile();
+            // Give the user a window that allows them to choose a place for the file to be saved.
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Save File");
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Critical Path Graph Files", "*.cpg"));
             File file = fileChooser.showSaveDialog(primaryStage);
 
+            // try to save the file.
             try {
                 FileWriter fileWriter = new FileWriter(file);
                 fileWriter.write(fileContents);
@@ -119,6 +132,7 @@ public class App extends Application {
         ToolbarButton newActBtn = new ToolbarButton("New Activity");
         newActBtn.setOnAction(e -> {
 
+            // Display a new window that prompts the user for task details so a task can be created.
             final Stage dialog = new Stage();
             dialog.initModality(Modality.APPLICATION_MODAL);
             dialog.initOwner(primaryStage);
@@ -154,6 +168,7 @@ public class App extends Application {
             GridPane.setConstraints(confirmButton, 1, 4);
             GridPane.setHalignment(confirmButton, HPos.RIGHT);
 
+            // Try to create a task with the details given.
             confirmButton.setOnAction(event -> {
                 try {
                     String predecessorsStr = preTextField.getText();
@@ -188,7 +203,9 @@ public class App extends Application {
             });
 
 
-            gridpane.getChildren().addAll(durText,actText, title, actTextField, durTextField, preTextField, preText, preText2, confirmButton);
+            gridpane.getChildren().addAll(durText,actText, title, actTextField,
+                                          durTextField, preTextField, preText,
+                                          preText2, confirmButton);
 
 
 
@@ -200,6 +217,7 @@ public class App extends Application {
         //DELETE ACTIVITY BUTTON
         ToolbarButton delActBtn = new ToolbarButton("Delete Activity");
         delActBtn.setOnAction(e -> {
+            // Show a new window that prompts the user for an activity name for a task to be deleted
             final Stage dialog = new Stage();
             dialog.initModality(Modality.APPLICATION_MODAL);
             dialog.initOwner(primaryStage);
@@ -226,6 +244,7 @@ public class App extends Application {
 
             gridpane.getChildren().addAll(actText, actTextField, confirmButton);
 
+            // Try to delete the task, display a dialog box if it failed.
             confirmButton.setOnAction(event -> {
                 try{
                     Task task = this.criticalpathgraph.getTask(actTextField.getText());
@@ -251,14 +270,16 @@ public class App extends Application {
         //INFO BUTTON
         ToolbarButton infoBtn = new ToolbarButton("Info");
         infoBtn.setOnAction(e -> {
+            // Make a new window that displays the critical paths of the network and the minimum completion time.
             final Stage dialog = new Stage();
             dialog.initModality(Modality.APPLICATION_MODAL);
             dialog.initOwner(primaryStage);
             dialog.setTitle("Info");
-            VBox dialogVbox = new VBox(10);
-            dialogVbox.setPadding(new Insets(10));
+            VBox dialogVBox = new VBox(10);
+            dialogVBox.setPadding(new Insets(10));
 
             String str = "The critical paths of the project are:";
+            // Convert the critical paths into strings (could be implemented as a separate method)
             ArrayList<ArrayList<Task>> criticalPaths = this.criticalpathgraph.getCriticalPaths();
             for (ArrayList<Task> cp : criticalPaths){
                 str += "\n";
@@ -268,11 +289,11 @@ public class App extends Application {
                 str = str.trim().substring(0, str.length() - 2);
             }
             Text txt1 = new Text(str);
-            Text txt2 = new Text("The minimum completion time is: " + this.criticalpathgraph.getTask("_END_").getLatestFinishTime());
+            Text txt2 = new Text("The minimum completion time is: " + this.criticalpathgraph.getEndTask().getLatestFinishTime());
 
-            dialogVbox.getChildren().addAll(txt1, txt2);
+            dialogVBox.getChildren().addAll(txt1, txt2);
 
-            Scene dialogScene = new Scene(dialogVbox, 300, 15*(str.split("\n").length) + 50);
+            Scene dialogScene = new Scene(dialogVBox, 300, 15*(str.split("\n").length) + 50);
             dialog.setScene(dialogScene);
             dialog.show();
         });
@@ -280,6 +301,7 @@ public class App extends Application {
         //TABLE BUTTON
         ToolbarButton tblBtn = new ToolbarButton("Precedence Table");
         tblBtn.setOnAction(e -> {
+            // Create a new window that shows the precedence table of the graph
             final Stage dialog = new Stage();
             dialog.initModality(Modality.APPLICATION_MODAL);
             dialog.initOwner(primaryStage);
@@ -302,6 +324,8 @@ public class App extends Application {
             GridPane.setConstraints(rightTableHeading, 1, 0);
             table.getChildren().addAll(leftTableHeading, rightTableHeading);
 
+            // Iterate through all the tasks and add them to the table with the predecessors being displayed in the
+            // right column.
             for (int i = 2; i < this.criticalpathgraph.getTasks().size(); i++){
                 try{
                     Task task = this.criticalpathgraph.getTasks().get(i);//+1 to avoid _START_ and _END_ activities
@@ -338,6 +362,7 @@ public class App extends Application {
             dialog.show();
         });
 
+        // Add all the buttons to the toolbar.
         ToolBar toolbar = new ToolBar(
                 newBtn,
                 openBtn,
@@ -355,9 +380,14 @@ public class App extends Application {
 
     }
 
+    /**
+     * Adds a task to the graph.
+     * @param task The task to be added to the graph.
+     */
     private void addTaskToGraph(Task task){
 
         this.graph.beginUpdate();
+        // make sure task to be added doesn't share id with required start and end nodes.
         if (!(task.getId().equals("_START_") || task.getId().equals("_END_"))){
             graph.getModel().addCell(task);
             for (Task tsk : task.getPredecessors()){
@@ -370,8 +400,13 @@ public class App extends Application {
         this.graph.endUpdate();
     }
 
+    /**
+     * Removes a task from the graph.
+     * @param task The task to be removed.
+     */
     private void removeTaskFromGraph(Task task){
         this.graph.beginUpdate();
+        // Ensure that the start/end nodes aren't removed
         if (!(task.getId().equals("_START_") || task.getId().equals("_END_"))){
             graph.getModel().removeCell(task, this.criticalpathgraph);
         }
@@ -380,6 +415,10 @@ public class App extends Application {
 
     }
 
+    /**
+     * Converts the criticalPathGraph object into a string that can be used to restore the object.
+     * @return A string version of the criticalPathGraph object.
+     */
     private String createFile(){
         String file = "";//[
         for (Task task : this.criticalpathgraph.getTasks()){
@@ -398,6 +437,11 @@ public class App extends Application {
         return file;
     }
 
+    /**
+     * Attempts to create a criticalPathGraph object from a file at a given path.
+     * @param file The path of the file to be converted.
+     * @throws Exception Thrown if the file can not be opened.
+     */
     private void openFile(String file) throws Exception {
         for (String task: file.split(",")){
             String[] data = task.split(":");

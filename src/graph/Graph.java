@@ -2,6 +2,10 @@ package graph;
 
 import javafx.scene.layout.Pane;
 
+/**
+ * A collection of all the Cells and Edges that are to be stored in a Pane to create a Graph looking element.
+ * @author Cameron Sabuda
+ */
 public class Graph {
 
     private Model model;
@@ -16,8 +20,16 @@ public class Graph {
         mouseGestures = new MouseGestures();
     }
 
+    /**
+     * Gets the CellLayer property.
+     * @return The CellLayer of the graph.
+     */
     public Pane getCellLayer() { return this.cellLayer; }
 
+    /**
+     * Gets the model the graph is based on.
+     * @return The model the graph is based on.
+     */
     public Model getModel() { return model; }
 
     public void beginUpdate() {

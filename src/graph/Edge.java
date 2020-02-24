@@ -7,11 +7,21 @@ import javafx.scene.Group;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Polygon;
 
+/**
+ * The graphical representation of an edge between two nodes of the graph. Makes a line between the centre of the two
+ * nodes to connect and makes a small arrow out of two lines at the centre of the line.
+ * @author Cameron Sabuda
+ */
 public class Edge extends Group {
 
     private Cell source;
     private Cell target;
 
+    /**
+     * Creates an edge from the centre of the source cell to the centre of the target centre.
+     * @param source The cell of which you want the edge to come from.
+     * @param target The cell of which you want the edge to go to.
+     */
     public Edge(Cell source, Cell target) {
 
         this.source = source;
@@ -19,15 +29,19 @@ public class Edge extends Group {
 
         Line line = new Line();
 
+        // Place the start of the edge at the centre of the source cell
         line.startXProperty().bind( source.layoutXProperty().add((source.getBoundsInParent().getWidth() / 2.0)+640));
         line.startYProperty().bind( source.layoutYProperty().add((source.getBoundsInParent().getHeight() / 2.0)+360));
 
+        // Place the end of the edge at the centre of the target cell
         line.endXProperty().bind( target.layoutXProperty().add((target.getBoundsInParent().getWidth() / 2.0)+640));
         line.endYProperty().bind( target.layoutYProperty().add((target.getBoundsInParent().getHeight() / 2.0)+360));
 
+        // Create two lines to create an arrow with
         Line arrow1 = new Line();
         Line arrow2 = new Line();
 
+        // Create an updater that calculates the coordinates of the arrow lines with some geometry
         InvalidationListener updater = (Observable o) -> {
             double ex = line.getEndX();
             double ey = line.getEndY();
@@ -84,10 +98,18 @@ public class Edge extends Group {
 
     }
 
+    /**
+     * Gets the cell that the edges goes from.
+     * @return The cell that the edge goes from.
+     */
     public Cell getSource() {
         return source;
     }
 
+    /**
+     * Gets the cell that the edge goes to.
+     * @return The cell that the edge goes to.
+     */
     public Cell getTarget() {
         return target;
     }

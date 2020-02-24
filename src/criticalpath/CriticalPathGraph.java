@@ -5,54 +5,71 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+/**
+ * Represents the critical path network as a whole. Part of the model.
+ * @author Cameron Sabuda
+ */
 public class CriticalPathGraph {
 
-
+    /**
+     * The tasks in the network.
+     */
     private ArrayList<Task> tasks = new ArrayList<>();
 
-    public CriticalPathGraph(){
+    /**
+     * Creates a critical path graph with a start and end node of weight 0.
+     */
+    public CriticalPathGraph() {
         Task start = new Task("_START_", (float)0.0, new ArrayList<>());
         Task end = new Task("_END_", (float)0.0 ,  new ArrayList<>());
         this.tasks.add(start);
         end.addPredecessor(start);
         this.tasks.add(end);
-
     }
 
+    /**
+     * Returns the tasks in the network.
+     * @return An ArrayList of all tasks in the network.
+     */
     public ArrayList<Task> getTasks() {
         return this.tasks;
     }
 
-    public void addTask(Task task) throws Exception {
+    /**
+     * Adds a task to the network. If the task is a duplicate task, an exception is thrown.
+     * @param task The task to be added to the network
+     * @throws DuplicateTaskException Thrown if the task to be added shares an id with a task already in the graph.
+     */
+    public void addTask(Task task) throws DuplicateTaskException {
 
         //check if task is duplicate
         for (Task tsk: this.getTasks()){
-            if (tsk.getId().equals(task.getId())){
-                throw new Exception(" a duplicate task");
+            if (tsk.getId().equals(task.getId())) {
+                throw new DuplicateTaskException(" a duplicate task");
             }
         }
         //Check if activity is a start activity
         if (task.getPredecessors().isEmpty() && !task.getId().equals("_START_")) {
-            System.out.println(task.getId() + " is a start activity");
-            task.getPredecessors().add(this.getTask("_START_"));
+            // System.out.println(task.getId() + " is a start activity");
+            task.getPredecessors().add(this.getStartTask());
         }
 
         //Check if any of the task's predecessors are a final activity
-        for (Task tsk : task.getPredecessors()){
-            System.out.println(tsk.getId() + " is a predecessor of " + task.getId());
-            if (this.getEndTasks().contains(tsk)){
-                System.out.println(task.getId() + " is an end activity");
-                this.getTask("_END_").getPredecessors().remove(tsk);
-                if(!this.getTask("_END_").getPredecessors().contains(task)){
-                    this.getTask("_END_").addPredecessor(task);
+        for (Task tsk : task.getPredecessors()) {
+            // System.out.println(tsk.getId() + " is a predecessor of " + task.getId());
+            if (this.getEndTasks().contains(tsk)) {
+                // System.out.println(task.getId() + " is an end activity");
+                this.getEndTask().getPredecessors().remove(tsk);
+                if(!this.getEndTask().getPredecessors().contains(task)){
+                    this.getEndTask().addPredecessor(task);
                 }
             }
         }
 
         //Check if task has any successor tasks, otherwise make it a predecessor of _END_
-        if (getSuccessorTasks(task).isEmpty()){
-            if (!this.getTask("_END_").getPredecessors().contains(task)){//check for duplicates
-                this.getTask("_END_").addPredecessor(task);
+        if (getSuccessorTasks(task).isEmpty()) {
+            if (!this.getEndTask().getPredecessors().contains(task)){//check for duplicates
+                this.getEndTask().addPredecessor(task);
             }
 
         }
@@ -61,59 +78,134 @@ public class CriticalPathGraph {
         this.assignStartEndTimes();
     }
 
-    public void deleteTask(Task task) throws Exception {
+    /**
+     * Deletes a task from the network. If the start/end nodes are attempted to be deleted then an exception is thrown.
+     * @param task The task to be deleted from the network.
+     * @throws InvalidTaskDeleteException Thrown if the task to be deleted is the start or end task node which have to
+     * be kept.
+     */
+    public void deleteTask(Task task) throws InvalidTaskDeleteException {
+
+        // check if task is the start/end node
         if (task.getId().equals("_START_") || task.getId().equals("_END_")) {
-            throw new Exception("Attempted deletion of _START_/_END_ node");
+            throw new InvalidTaskDeleteException("Attempted deletion of _START_/_END_ node");
         }
 
         this.tasks.remove(task);
+
+        // make sure linked tasks aren't unlinked
         for (Task task1: this.getSuccessorTasks(task)){
             task1.getPredecessors().remove(task);
             task1.addPredecessors(task.getPredecessors());
         }
     }
 
+    /**
+     * Gets the starting tasks in the network.
+     * @return A list of tasks containing the starting tasks.
+     */
     private ArrayList<Task> getStartTasks(){
-        return getSuccessorTasks(this.getTask("_START_"));
+        return getSuccessorTasks(this.getStartTask());
     }
 
-    private ArrayList<Task> getEndTasks(){
-        return this.getTask("_END_").getPredecessors();
+    /**
+     * Gets the end tasks of a network.
+     * @return A list of tasks containing the end tasks.
+     */
+    private ArrayList<Task> getEndTasks() {
+        try {
+            return this.getTask("_END_").getPredecessors();
+        }
+        catch (Exception e) {
+            // This should never happen but is here just in case
+            System.err.println("End task not found.");
+            return null;
+        }
     }
 
-    public Task getTask(String id){
+    /**
+     * Gets a task by their id string.
+     * @param id The id of the required task.
+     * @return The task that has the id given.
+     * @exception TaskNotFoundException Thrown if task to retrieve doesn't exist.
+     */
+    public Task getTask(String id) throws TaskNotFoundException {
         for (Task task : this.tasks){
             if (task.getId().equals(id)){
                 return task;
             }
         }
-        try {
-          throw new Exception("Task not found");
-        } catch(Exception e){
-            e.printStackTrace();
-        }
-        return null;
+        throw new TaskNotFoundException("Task not found");
     }
 
-    public ArrayList<Task> getSuccessorTasks(Task target){
+    /**
+     * A specific version of getTask() that gets the start task. This doesn't throw an exception as getting the start
+     * task should never cause an exception and saves having to deal with exception from getting tasks if they are just
+     * the start task.
+     * @return The start task.
+     */
+    public Task getStartTask() {
+        try {
+            return this.getTask("_START_");
+        }
+        catch (TaskNotFoundException e) {
+            System.err.println("Start task doesn't exist"); // This really shouldn't ever happen.
+            return null;
+        }
+    }
+
+    /**
+     * A specific version of getTask() that gets the end task. This doesn't throw an exception as getting the end
+     * task should never cause an exception and saves having to deal with exception from getting tasks if they are just
+     * the end task.
+     * @return The end task.
+     */
+    public Task getEndTask() {
+        try {
+            return this.getTask("_END_");
+        }
+        catch (TaskNotFoundException e) {
+            System.err.println("End task doesn't exist"); // This really shouldn't ever happen.
+            return null;
+        }
+    }
+
+    /**
+     * Gets the successors of a task by iterating through all of the tasks in the network and checking its predecessors
+     * @param task The task get the successors of.
+     * @return A list of tasks that contain the task as a predecessor
+     */
+    public ArrayList<Task> getSuccessorTasks(Task task){
         ArrayList<Task> tasks = new ArrayList<>();
-        for (Task task : this.tasks){
-            if (task.getPredecessors().contains(target)){
-                tasks.add(task);
+        for (Task t : this.tasks){
+            if (t.getPredecessors().contains(task)){
+                tasks.add(t);
             }
         }
         return tasks;
     }
 
+    /**
+     * Helper method for AssignStartEndTimes that checks if a given task's predecessors have already been searched.
+     * @param task The task whose predecessors we desire to check
+     * @param searched A mapping of tasks to a boolean which represents if they have been searched or not.
+     * @return True if searched, false if not.
+     */
     private Boolean checkIfAllPredecessorsSearched(Task task, HashMap<Task, Boolean> searched){
-        for (Task tsk : task.getPredecessors()){
-            if (!searched.get(tsk)){
+        for (Task t : task.getPredecessors()){
+            if (!searched.get(t)){
                 return false;
             }
         }
         return true;
     }
 
+    /**
+     * Helper method for AssignStartEndTimes that checks if a given task's successors have already been searched.
+     * @param task The task whose successors we desire to check
+     * @param searched A mapping of tasks to a boolean which represents if they have been searched or not.
+     * @return True if searched, false if not.
+     */
     private Boolean checkIfAllSuccessorsSearched(Task task, HashMap<Task, Boolean> searched){
         for (Task tsk : getSuccessorTasks(task)){
             if (!searched.get(tsk)){
@@ -123,7 +215,11 @@ public class CriticalPathGraph {
         return true;
     }
 
-    private void assignStartEndTimes(){
+    /**
+     * A method that calculates the earliest start and latest finish times of all the tasks in the network and assigns
+     * them to the tasks. Used when a task is added because it can affect the start/finish times of other tasks.
+     */
+    private void assignStartEndTimes() {
         if (this.tasks.size() == 2){
             return;
         }
@@ -148,7 +244,7 @@ public class CriticalPathGraph {
             searched.replace(task, true);
         }
 
-        while (!searched.get(getTask("_END_"))){
+        while (!searched.get(getEndTask())){
             Task currentTask = queue.pop();
 
             //Check if successor tasks from visited activity have had their predecessors' start times defined yet
@@ -185,9 +281,9 @@ public class CriticalPathGraph {
 
         System.out.println("listing end tasks");
         //set end tasks earliest end time equal to start time and marks them as searched
-        queue.addLast(this.getTask("_END_"));
-        searched.replace(this.getTask("_END_"), true);
-        this.getTask("_END_").setLatestFinishTime(getTask("_END_").getEarlyStartTime());
+        queue.addLast(this.getEndTask());
+        searched.replace(this.getEndTask(), true);
+        this.getEndTask().setLatestFinishTime(getEndTask().getEarlyStartTime());
         /*
         for (Task task : this.getEndTasks()){
             //System.out.println(task.getId());
@@ -197,7 +293,7 @@ public class CriticalPathGraph {
         }
         */
 
-        while (!searched.get(getTask("_START_"))){
+        while (!searched.get(getStartTask())){
             Task currentTask = queue.pop();
 
             //Check if successor tasks from visited activity have had their successors' late start times defined yet
@@ -225,6 +321,10 @@ public class CriticalPathGraph {
 
     }
 
+    /**
+     * Gets all the critical paths that are in the network.
+     * @return A list of list of tasks that each represent a critical path.
+     */
     public ArrayList<ArrayList<Task>> getCriticalPaths(){
         ArrayList<ArrayList<Task>> criticalPaths = new ArrayList<>();
         HashMap<Task, Boolean> searched = new HashMap<>();
@@ -236,11 +336,11 @@ public class CriticalPathGraph {
         }
 
         ArrayList<Task> cp1 = new ArrayList<>();
-        cp1.add(this.getTask("_END_"));
+        cp1.add(this.getEndTask());
         criticalPaths.add(cp1);
-        queue.addAll(this.getTask("_END_").getPredecessors());
+        queue.addAll(this.getEndTask().getPredecessors());
 
-        while (!searched.get(this.getTask("_START_"))){
+        while (!searched.get(this.getStartTask())){
             Task task = queue.pop();
             System.out.println("Searching " + task.getId());
             if (task.getLatestFinishTime() - task.getDuration() == task.getEarlyStartTime()){
@@ -275,8 +375,8 @@ public class CriticalPathGraph {
 
         //remove _START_ and _END_ as they will always be critical and the user doesn't need to see them
         for (ArrayList<Task> cp : criticalPaths){
-            cp.remove(this.getTask("_END_"));
-            cp.remove(this.getTask("_START_"));
+            cp.remove(this.getEndTask());
+            cp.remove(this.getStartTask());
         }
 
         return criticalPaths;
